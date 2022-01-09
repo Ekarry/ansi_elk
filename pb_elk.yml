@@ -1,0 +1,91 @@
+---
+- hosts: all
+  become: true
+  gather_facts: no
+  tasks:
+    - name: Add an Apt signing key for the Elastic
+      ansible.builtin.apt_key:
+        url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+        state: present
+    - name: Apt Install Source
+      ansible.builtin.apt:
+        name: apt-transport-https
+        state: present
+    - name: Apt Elasticsearch Repository
+      apt_repository:
+        repo: deb https://artifacts.elastic.co/packages/7.x/apt stable main
+        state: present
+    - name: Apt Install ELK
+      ansible.builtin.apt:
+        name: elasticsearch
+        state: present
+    - name: Apt Install Kibana
+      ansible.builtin.apt:
+        name: kibana
+        state: present
+    - name: Apt Install Logstash
+      ansible.builtin.apt:
+        name: logstash
+        state: present
+    - name: Apt Install Filebeat
+      ansible.builtin.apt:
+        name: filebeat
+        state: present
+    - name: ELK systemd
+      ansible.builtin.systemd:
+        name: elasticsearch
+        state: started
+        enabled: yes
+    - name: Kibana systemd
+      ansible.builtin.systemd:
+        name: kibana
+        state: started
+        enabled: yes  
+    - name: Filebeat systemd
+      ansible.builtin.systemd:
+        name: filebeat
+        state: started
+        enabled: yes
+    - name: Prepare configs for Logstash input
+      copy: 
+       src: configs/logstash/input.conf
+       dest: /etc/logstash/conf.d
+       mode: 0644 
+       owner: root 
+       group: root
+    - name: Prepare configs for Logstash output 
+      copy: 
+       src: configs/logstash/output.conf
+       dest: /etc/logstash/conf.d
+       mode: 0644 
+       owner: root 
+       group: root
+    - name: Prepare configs for Logstash filter  
+      copy: 
+       src: configs/logstash/filter.conf
+       dest: /etc/logstash/conf.d
+       mode: 0644 
+       owner: root 
+       group: root
+    - name: Prepare configs for Filebeat output 
+      copy: 
+       src: configs/filebeat/filebeat.yml
+       dest: /etc/filebeat
+       mode: 0644 
+       owner: root 
+       group: root
+    - name: Kibana systemd
+      ansible.builtin.systemd:
+        name: kibana
+        state: restarted
+        enabled: yes
+    - name: Filebeat systemd
+      ansible.builtin.systemd:
+        name: filebeat
+        state: restarted
+        enabled: yes
+    - name: Logstash systemd
+      ansible.builtin.systemd:
+        name: logstash
+        state: restarted
+        enabled: yes
